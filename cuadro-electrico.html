@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>El cuadro eléctrico · Instalaciones en viviendas</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --panel:#ffffff; --ink:#1f2328; --muted:#5f6670;
+    --line:#d9d3c7; --accent:#e8701a; --accent-dark:#b9540d;
+    --ok:#1f8a4c; --ok-bg:#e3f4ea; --bad:#c0392b; --bad-bg:#fbe7e4;
+    --info-bg:#fff4e6; --dark:#2b2f36;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+  header{background:var(--dark);color:#fff;padding:18px 20px}
+  header .wrap{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:1.35rem;margin:0}
+  header a{color:#ffd2ad;text-decoration:none;font-size:.95rem}
+  header .tag{background:var(--accent);color:#fff;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:600}
+  main{max-width:1100px;margin:0 auto;padding:18px 16px 40px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  h2{font-size:1.1rem;margin:0 0 10px}
+
+  /* Cuadro */
+  .cuadro{background:#e9e6df;border:2px solid #bdb6a8;border-radius:var(--radius);padding:14px;overflow-x:auto}
+  .rail{display:flex;gap:8px;min-width:max-content;padding:6px 4px;position:relative}
+  .rail::before{content:"";position:absolute;left:0;right:0;top:50%;height:22px;transform:translateY(-50%);background:linear-gradient(#b9b9b9,#9a9a9a);border-radius:3px;z-index:0}
+  .mod{position:relative;z-index:1;width:96px;background:#fbfbf8;border:1px solid #c9c6bd;border-radius:8px;padding:8px 6px;text-align:center;cursor:pointer;font:inherit;color:inherit;transition:transform .1s,box-shadow .2s}
+  .mod:hover{box-shadow:0 0 0 3px rgba(232,112,26,.35)}
+  .mod:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .mod .name{font-weight:700;font-size:.92rem}
+  .mod .desc{font-size:.7rem;color:var(--muted);min-height:2.6em;display:flex;align-items:center;justify-content:center}
+  .mod .rating{font-size:.78rem;font-weight:600;margin-top:2px}
+  .sw{width:34px;height:58px;margin:8px auto 4px;background:#3a3f47;border-radius:6px;position:relative}
+  .sw .knob{position:absolute;left:4px;right:4px;height:24px;border-radius:4px;background:var(--accent);top:5px;transition:top .25s ease}
+  .mod.off .sw .knob{top:29px;background:#8b8f96}
+  .state{font-size:.72rem;font-weight:700;letter-spacing:.05em}
+  .mod.on .state{color:var(--ok)} .mod.off .state{color:var(--bad)}
+  .mod.tripped{animation:trip .6s ease 2}
+  @keyframes trip{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+  .mod.flash{box-shadow:0 0 0 4px var(--bad)}
+  .mod.group-start{margin-left:14px}
+  @media (max-width:700px){
+    .rail{flex-wrap:wrap;min-width:0;justify-content:center}
+    .rail::before{display:none}
+    .mod{width:calc(25% - 6px);padding:6px 3px}
+    .mod.group-start{margin-left:0}
+    .mod .desc{font-size:.62rem}
+  }
+
+  /* Casa */
+  .casa{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px}
+  .room{border-radius:10px;padding:10px 6px;text-align:center;border:1px solid var(--line);transition:background .3s,color .3s}
+  .room .ico{font-size:1.7rem;filter:grayscale(1);opacity:.45;transition:all .3s}
+  .room .lbl{font-size:.75rem}
+  .room.on{background:#fff6d6;border-color:#f0c96a}
+  .room.on .ico{filter:none;opacity:1}
+  .room.off{background:#3a3f47;color:#c9ccd1;border-color:#3a3f47}
+  @media (max-width:640px){.casa{grid-template-columns:repeat(3,1fr)}}
+
+  /* Pestañas */
+  .tabs{display:flex;gap:6px;margin:18px 0 0;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);border-bottom:none;background:#ebe6dc;padding:10px 14px;border-radius:10px 10px 0 0;cursor:pointer;font:inherit;font-weight:600;color:var(--muted)}
+  .tab[aria-selected="true"]{background:var(--panel);color:var(--ink)}
+  .tabpanel{border-top-left-radius:0}
+  .hidden{display:none !important}
+
+  .btn{font:inherit;font-weight:600;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--accent);color:#fff}
+  .btn:hover{background:var(--accent-dark)}
+  .btn:disabled{background:#c9c3b8;cursor:not-allowed}
+  .btn.sec{background:#e7e2d8;color:var(--ink)} .btn.sec:hover{background:#dcd5c8}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .msg{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.96rem}
+  .msg.ok{background:var(--ok-bg);border-left:5px solid var(--ok)}
+  .msg.bad{background:var(--bad-bg);border-left:5px solid var(--bad)}
+  .msg.info{background:var(--info-bg);border-left:5px solid var(--accent)}
+  .scen{font-size:1.08rem;background:#faf8f3;border:1px dashed var(--line);border-radius:10px;padding:14px;margin:10px 0}
+  .progress{color:var(--muted);font-size:.9rem}
+  .score{font-weight:700}
+
+  /* Laboratorio */
+  .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:820px){.lab-grid{grid-template-columns:1fr}}
+  .circ{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px}
+  .circ h3{margin:0 0 6px;font-size:.95rem}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font:inherit;font-size:.85rem;border:1px solid var(--line);background:#f7f5f0;border-radius:999px;padding:6px 10px;cursor:pointer}
+  .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .meter{height:10px;background:#ece8e0;border-radius:999px;overflow:hidden;margin-top:8px}
+  .meter > span{display:block;height:100%;background:var(--ok);width:0;transition:width .3s,background .3s}
+  .meter.warn > span{background:#e6a100} .meter.over > span{background:var(--bad)}
+  .small{font-size:.82rem;color:var(--muted)}
+  select{font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--line)}
+  .formula{font-family:ui-monospace,Consolas,monospace;background:#faf8f3;border-radius:8px;padding:8px 10px;margin-top:6px}
+  footer{max-width:1100px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="tag">4º ESO · Tecnología</span>
+    <h1>El cuadro eléctrico: ¿qué salta?</h1>
+    <a href="index.html">← Volver a las actividades</a>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Cuadro de mando y protección</h2>
+    <p class="small" id="cuadroHint">Cada palanca naranja arriba significa que el aparato está conectado (ON).</p>
+    <div class="cuadro"><div class="rail" id="rail"></div></div>
+    <div class="casa" id="casa"></div>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="quiz">1. ¿Qué salta?</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="lab">2. Laboratorio de consumo</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="vac">3. Me voy de vacaciones</button>
+  </div>
+
+  <!-- 1. QUIZ -->
+  <section class="card tabpanel" id="tab-quiz">
+    <div class="row" style="justify-content:space-between">
+      <span class="progress" id="qProgress"></span>
+      <span class="score" id="qScore"></span>
+    </div>
+    <div class="scen" id="qText"></div>
+    <p class="small" id="qInstr">👉 Haz clic en el aparato del cuadro que crees que va a saltar.</p>
+    <div id="qMsg"></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="qNext" disabled>Siguiente situación</button>
+    </div>
+  </section>
+
+  <!-- 2. LAB -->
+  <section class="card tabpanel hidden" id="tab-lab">
+    <p>Enciende y apaga aparatos y observa cuánta corriente circula por cada circuito. Si un circuito o la vivienda entera supera su límite, algo saltará. Para volver a conectarlo, apaga algún aparato y sube la palanca.</p>
+    <div class="row">
+      <label for="potencia"><strong>Potencia contratada:</strong></label>
+      <select id="potencia">
+        <option value="3450">3450 W</option>
+        <option value="4600">4600 W</option>
+        <option value="5750" selected>5750 W</option>
+      </select>
+      <button class="btn sec" id="labReset">Apagar todo y reiniciar</button>
+    </div>
+    <div class="formula" id="icpFormula"></div>
+    <div class="lab-grid" style="margin-top:12px">
+      <div id="labCircuits"></div>
+      <div>
+        <div class="circ">
+          <h3>Consumo total de la vivienda</h3>
+          <div id="labTotal"></div>
+          <div class="meter" id="totalMeter"><span></span></div>
+        </div>
+        <div id="labMsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. VACACIONES -->
+  <section class="card tabpanel hidden" id="tab-vac">
+    <p>La familia se va dos semanas de vacaciones. Quieren dejar sin corriente todo lo posible, <strong>pero el frigorífico tiene que seguir funcionando</strong> para que no se estropee la comida.</p>
+    <p>Baja y sube las palancas del cuadro y, cuando lo tengas, pulsa «Comprobar».</p>
+    <div class="row">
+      <button class="btn" id="vacCheck">Comprobar</button>
+      <button class="btn sec" id="vacReset">Volver a conectar todo</button>
+    </div>
+    <div id="vacMsg"></div>
+  </section>
+</main>
+
+<footer>Actividad interactiva para el tema «Instalaciones en viviendas». Valores simplificados con fines didácticos (tensión de 230 V).</footer>
+
+<script>
+const V = 230;
+const DEV = [
+  {id:"ICP", name:"ICP", desc:"Control de potencia"},
+  {id:"IGA", name:"IGA", desc:"Interruptor general", rating:"25 A"},
+  {id:"ID",  name:"ID",  desc:"Diferencial", rating:"30 mA"},
+  {id:"C1", name:"PIA C1", desc:"Alumbrado", amps:10, icon:"💡", room:"Iluminación"},
+  {id:"C2", name:"PIA C2", desc:"Enchufes y frigorífico", amps:16, icon:"🔌", room:"Enchufes y frigorífico"},
+  {id:"C3", name:"PIA C3", desc:"Cocina y horno", amps:25, icon:"🍳", room:"Cocina y horno"},
+  {id:"C4", name:"PIA C4", desc:"Lavadora, lavavajillas, termo", amps:20, icon:"🧺", room:"Lavadora, lavavajillas y termo"},
+  {id:"C5", name:"PIA C5", desc:"Baño y aux. cocina", amps:16, icon:"🚿", room:"Baño y enchufes aux. de cocina"},
+];
+const CIRCS = DEV.filter(d => d.amps);
+const state = {};
+let mode = "quiz";
+let contratada = 5750;
+
+const fmt = (n, d=1) => n.toLocaleString("es-ES",{minimumFractionDigits:d, maximumFractionDigits:d});
+const icpAmps = () => contratada / V;
+
+/* ---------- Render del cuadro ---------- */
+const rail = document.getElementById("rail");
+const casa = document.getElementById("casa");
+DEV.forEach((d,i) => {
+  const b = document.createElement("button");
+  b.className = "mod on" + (i===3 ? " group-start" : "");
+  b.id = "mod-" + d.id;
+  b.type = "button";
+  b.innerHTML = `<div class="name">${d.name}</div>
+    <div class="sw"><div class="knob"></div></div>
+    <div class="state">ON</div>
+    <div class="rating">${d.amps ? d.amps + " A" : (d.rating || "")}</div>
+    <div class="desc">${d.desc}</div>`;
+  b.addEventListener("click", () => onDevice(d.id));
+  rail.appendChild(b);
+  state[d.id] = true;
+});
+CIRCS.forEach(c => {
+  const r = document.createElement("div");
+  r.className = "room on"; r.id = "room-" + c.id;
+  r.innerHTML = `<div class="ico">${c.icon}</div><div class="lbl"><strong>${c.id}</strong> · ${c.room}</div>`;
+  casa.appendChild(r);
+});
+
+function powered(cid){ return state.ICP && state.IGA && state.ID && state[cid]; }
+
+function render(){
+  DEV.forEach(d => {
+    const el = document.getElementById("mod-" + d.id);
+    el.classList.toggle("on", state[d.id]);
+    el.classList.toggle("off", !state[d.id]);
+    el.querySelector(".state").textContent = state[d.id] ? "ON" : "OFF";
+    el.setAttribute("aria-label", `${d.name} (${d.desc}): ${state[d.id] ? "conectado" : "desconectado"}`);
+  });
+  document.querySelector("#mod-ICP .rating").textContent = fmt(icpAmps(),0) + " A";
+  CIRCS.forEach(c => {
+    const r = document.getElementById("room-" + c.id);
+    const p = powered(c.id);
+    r.classList.toggle("on", p); r.classList.toggle("off", !p);
+  });
+  if (mode === "lab") renderLab();
+}
+
+function trip(id){
+  state[id] = false;
+  const el = document.getElementById("mod-" + id);
+  el.classList.remove("tripped"); void el.offsetWidth;
+  el.classList.add("tripped","flash");
+  setTimeout(() => el.classList.remove("flash"), 1400);
+  render();
+}
+function allOn(){ DEV.forEach(d => state[d.id] = true); render(); }
+
+function onDevice(id){
+  if (mode === "quiz") return quizAnswer(id);
+  state[id] = !state[id];
+  render();
+  if (mode === "lab" && state[id]) labEvaluate(true);
+}
+
+/* ---------- Pestañas ---------- */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  ["quiz","lab","vac"].forEach(k => document.getElementById("tab-"+k).classList.toggle("hidden", k !== t.dataset.tab));
+  mode = t.dataset.tab;
+  document.getElementById("cuadroHint").textContent = mode === "quiz"
+    ? "En esta parte, haz clic en el aparato que crees que va a saltar."
+    : "Haz clic en un aparato para bajar o subir su palanca.";
+  if (mode === "quiz") { allOn(); showScenario(); }
+  if (mode === "lab") { labResetAll(); }
+  if (mode === "vac") { allOn(); setMsg("vacMsg", "", ""); }
+}));
+
+function setMsg(boxId, cls, html){
+  const box = document.getElementById(boxId);
+  box.innerHTML = html ? `<div class="msg ${cls}">${html}</div>` : "";
+}
+
+/* ---------- 1. ¿Qué salta? ---------- */
+const SCEN = [
+  {t:"Es invierno y en casa están funcionando a la vez el horno, la vitrocerámica, la lavadora, el termo y dos estufas. Entre todo suman más potencia de la que la familia tiene contratada.",
+   a:"ICP", e:"El <strong>ICP</strong> limita la potencia total a la que se ha contratado con la compañía. Si se supera, corta la corriente de toda la vivienda."},
+  {t:"Al cambiar una lámpara del salón con la luz encendida, los dos cables del portalámparas se tocan: hay un cortocircuito en el circuito de alumbrado.",
+   a:"C1", e:"Un cortocircuito en el alumbrado lo detecta su PIA, el <strong>C1</strong>. El resto de circuitos sigue funcionando."},
+  {t:"Alguien toca sin querer el cable pelado de una lámpara de pie y nota una descarga.",
+   a:"ID", e:"La corriente se escapa a través de la persona y no vuelve por el neutro. El <strong>diferencial</strong> detecta esa diferencia (más de 30 mA) y corta."},
+  {t:"Dentro de la lavadora se suelta un cable y toca la carcasa metálica. Como está conectada a tierra, parte de la corriente se va por el cable verde-amarillo.",
+   a:"ID", e:"Es una fuga a tierra: entra más corriente de la que vuelve por el neutro, así que salta el <strong>diferencial</strong>. Por eso los aparatos con carcasa metálica van a tierra."},
+  {t:"En el salón conectan a una regleta una estufa, una plancha y un secador. El cable del circuito de enchufes de uso general empieza a calentarse.",
+   a:"C2", e:"Es una sobrecarga en el circuito de enchufes de uso general: salta su PIA, el <strong>C2</strong>, antes de que se quemen los cables."},
+  {t:"Un ratón ha mordido el cable que alimenta el horno y los conductores se tocan: cortocircuito en el circuito de cocina y horno.",
+   a:"C3", e:"El circuito de cocina y horno es el C3, así que salta el <strong>PIA C3</strong>. La luz y los enchufes siguen funcionando."},
+  {t:"Ponen a la vez la lavadora, el lavavajillas y el termo eléctrico, y el circuito que los alimenta supera su intensidad máxima.",
+   a:"C4", e:"Lavadora, lavavajillas y termo van en el circuito C4: sobrecarga y salta el <strong>PIA C4</strong>."},
+  {t:"Pulsas el botón «T» de uno de los aparatos del cuadro para comprobar que funciona bien.",
+   a:"ID", e:"El botón de prueba (T) es del <strong>diferencial</strong>: genera una fuga artificial. Si no salta, el diferencial está averiado."},
+  {t:"En el cuarto de baño, el secador de pelo tiene el cable dañado y sus dos conductores se tocan.",
+   a:"C5", e:"Los enchufes del baño están en el circuito C5: salta su PIA, el <strong>C5</strong>."},
+  {t:"Se produce un cortocircuito dentro del propio cuadro, en el cable que une el interruptor general con los PIA.",
+   a:"IGA", e:"Ese tramo no pertenece a ningún circuito concreto: lo protege el <strong>IGA</strong>, que vigila toda la instalación y corta la corriente de toda la vivienda."},
+];
+let qOrder = [], qIdx = 0, qScore = 0, qAnswered = false;
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function quizStart(){ qOrder = shuffle(SCEN.map((_,i)=>i)); qIdx = 0; qScore = 0; showScenario(); }
+function showScenario(){
+  allOn(); qAnswered = false;
+  const nextBtn = document.getElementById("qNext");
+  if (qIdx >= qOrder.length){
+    document.getElementById("qProgress").textContent = "Actividad terminada";
+    document.getElementById("qText").innerHTML = `Has acertado <strong>${qScore} de ${SCEN.length}</strong> situaciones.`;
+    document.getElementById("qInstr").classList.add("hidden");
+    setMsg("qMsg", qScore >= 8 ? "ok" : "info", qScore >= 8
+      ? "¡Muy bien! Distingues perfectamente qué protege cada aparato del cuadro."
+      : "Repasa: el <strong>ICP</strong> limita la potencia contratada, el <strong>IGA</strong> protege toda la instalación, el <strong>diferencial</strong> protege a las personas de fugas y cada <strong>PIA</strong> protege un solo circuito.");
+    nextBtn.textContent = "Empezar de nuevo"; nextBtn.disabled = false;
+    nextBtn.onclick = () => { nextBtn.textContent = "Siguiente situación"; nextBtn.onclick = goNext; document.getElementById("qInstr").classList.remove("hidden"); quizStart(); };
+    return;
+  }
+  const s = SCEN[qOrder[qIdx]];
+  document.getElementById("qProgress").textContent = `Situación ${qIdx+1} de ${SCEN.length}`;
+  document.getElementById("qScore").textContent = `Aciertos: ${qScore}`;
+  document.getElementById("qText").textContent = s.t;
+  setMsg("qMsg","","");
+  nextBtn.disabled = true;
+}
+function quizAnswer(id){
+  if (qAnswered || qIdx >= qOrder.length) return;
+  qAnswered = true;
+  const s = SCEN[qOrder[qIdx]];
+  const ok = id === s.a;
+  if (ok) qScore++;
+  trip(s.a);
+  const name = DEV.find(d=>d.id===id).name;
+  setMsg("qMsg", ok ? "ok" : "bad",
+    (ok ? "✅ ¡Correcto! " : `❌ Has elegido <strong>${name}</strong>, pero no es el que salta. `) + s.e +
+    "<br><span class='small'>Fíjate en la casa: ¿qué zonas se han quedado sin corriente?</span>");
+  document.getElementById("qScore").textContent = `Aciertos: ${qScore}`;
+  document.getElementById("qNext").disabled = false;
+}
+function goNext(){ qIdx++; showScenario(); }
+document.getElementById("qNext").onclick = goNext;
+
+/* ---------- 2. Laboratorio ---------- */
+const APPS = [
+  {n:"Luces de toda la casa", w:300, c:"C1"},
+  {n:"Frigorífico", w:200, c:"C2"}, {n:"Televisión", w:150, c:"C2"}, {n:"Ordenador", w:300, c:"C2"},
+  {n:"Estufa eléctrica", w:2000, c:"C2"}, {n:"Plancha", w:2200, c:"C2"},
+  {n:"Horno", w:2500, c:"C3"}, {n:"Vitrocerámica", w:3500, c:"C3"},
+  {n:"Lavadora", w:2200, c:"C4"}, {n:"Lavavajillas", w:1800, c:"C4"}, {n:"Termo eléctrico", w:1500, c:"C4"},
+  {n:"Secador de pelo", w:1800, c:"C5"}, {n:"Microondas", w:1000, c:"C5"},
+];
+APPS.forEach(a => a.on = false);
+const labCirc = document.getElementById("labCircuits");
+CIRCS.forEach(c => {
+  const box = document.createElement("div");
+  box.className = "circ";
+  box.innerHTML = `<h3>${c.icon} ${c.id} · ${c.room} <span class="small">(PIA de ${c.amps} A = ${c.amps*V} W)</span></h3>
+    <div class="chips"></div>
+    <div class="small" id="lab-txt-${c.id}"></div>
+    <div class="meter" id="lab-m-${c.id}"><span></span></div>`;
+  const chips = box.querySelector(".chips");
+  APPS.filter(a => a.c === c.id).forEach(a => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.setAttribute("aria-pressed","false");
+    b.textContent = `${a.n} · ${a.w} W`;
+    b.onclick = () => { a.on = !a.on; b.setAttribute("aria-pressed", a.on); render(); labEvaluate(false); };
+    chips.appendChild(b);
+  });
+  labCirc.appendChild(box);
+});
+
+function circW(cid){ return APPS.filter(a => a.c===cid && a.on).reduce((s,a)=>s+a.w,0); }
+function totalW(){ return CIRCS.filter(c => powered(c.id)).reduce((s,c)=>s+circW(c.id),0); }
+
+function renderLab(){
+  document.getElementById("icpFormula").innerHTML =
+    `ICP: I = P / V = ${contratada} W / ${V} V = <strong>${fmt(icpAmps(),0)} A</strong>`;
+  CIRCS.forEach(c => {
+    const w = circW(c.id), p = powered(c.id), i = p ? w / V : 0;
+    document.getElementById("lab-txt-"+c.id).textContent = p
+      ? `${w} W → ${fmt(i)} A de ${c.amps} A`
+      : `Sin corriente (aparatos encendidos: ${w} W)`;
+    const m = document.getElementById("lab-m-"+c.id);
+    const pct = Math.min(100, i / c.amps * 100);
+    m.firstElementChild.style.width = pct + "%";
+    m.classList.toggle("warn", pct >= 75 && pct < 100); m.classList.toggle("over", pct >= 100);
+  });
+  const tw = totalW(), ti = tw / V, lim = icpAmps();
+  document.getElementById("labTotal").innerHTML =
+    `<div class="formula">P total = ${tw} W → I = ${tw} / ${V} = <strong>${fmt(ti)} A</strong> (límite del ICP: ${fmt(lim,0)} A)</div>`;
+  const tm = document.getElementById("totalMeter");
+  const pct = Math.min(100, ti / lim * 100);
+  tm.firstElementChild.style.width = pct + "%";
+  tm.classList.toggle("warn", pct >= 75 && pct < 100); tm.classList.toggle("over", pct >= 100);
+}
+
+function labEvaluate(rearm){
+  for (const c of CIRCS){
+    if (!powered(c.id)) continue;
+    const i = circW(c.id) / V;
+    if (i > c.amps){
+      trip(c.id);
+      setMsg("labMsg","bad", `⚡ <strong>Ha saltado el PIA ${c.id}</strong>: por el circuito «${c.room}» circulaban ${fmt(i)} A y su límite es ${c.amps} A (sobrecarga).` +
+        (rearm ? "<br>Has subido la palanca sin quitar la causa, así que vuelve a saltar." : "") +
+        "<br><span class='small'>¿Qué aparatos podrías apagar? Después sube la palanca del PIA.</span>");
+      return;
+    }
+  }
+  const ti = totalW() / V;
+  if (state.ICP && ti > icpAmps()){
+    trip("ICP");
+    setMsg("labMsg","bad", `⚡ <strong>Ha saltado el ICP</strong>: la vivienda consumía ${fmt(ti)} A y la potencia contratada solo permite ${fmt(icpAmps(),0)} A. Toda la casa se queda sin corriente.` +
+      (rearm ? "<br>Has subido la palanca sin bajar el consumo, así que vuelve a saltar." : "") +
+      "<br><span class='small'>Ningún circuito por separado tenía problema: el exceso está en la suma total.</span>");
+    return;
+  }
+  if (rearm) setMsg("labMsg","ok","✅ Palanca subida. De momento todo funciona.");
+  else setMsg("labMsg","","");
+}
+
+function labResetAll(){
+  APPS.forEach(a => a.on = false);
+  document.querySelectorAll(".chip").forEach(b => b.setAttribute("aria-pressed","false"));
+  allOn(); setMsg("labMsg","info","Empieza encendiendo aparatos. Prueba, por ejemplo, la estufa y la plancha a la vez, o el horno y la vitrocerámica.");
+}
+document.getElementById("labReset").onclick = labResetAll;
+document.getElementById("potencia").onchange = e => { contratada = +e.target.value; render(); labEvaluate(false); };
+
+/* ---------- 3. Vacaciones ---------- */
+document.getElementById("vacReset").onclick = () => { allOn(); setMsg("vacMsg","",""); };
+document.getElementById("vacCheck").onclick = () => {
+  const general = ["ICP","IGA","ID"].filter(k => !state[k]);
+  if (general.length){
+    setMsg("vacMsg","bad", `Has bajado <strong>${general.join(", ")}</strong>. ¿Qué le pasa entonces al frigorífico? Fíjate en la casa: si cae un aparato general, se queda sin corriente toda la vivienda.`);
+    return;
+  }
+  if (!state.C2){
+    setMsg("vacMsg","bad","El frigorífico se ha quedado sin corriente. Pista: ¿en qué circuito está conectado? Búscalo en las etiquetas de los PIA.");
+    return;
+  }
+  const others = ["C1","C3","C4","C5"].filter(k => state[k]);
+  if (others.length){
+    setMsg("vacMsg","info", `El frigorífico funciona, pero todavía dejas conectados: <strong>${others.join(", ")}</strong>. ¿Hace falta alguno estando de vacaciones?`);
+    return;
+  }
+  setMsg("vacMsg","ok","✅ ¡Perfecto! Solo queda conectado el <strong>PIA C2</strong>, que alimenta el frigorífico. Ojo: ese circuito también alimenta los enchufes de uso general, así que conviene desenchufar lo que no se vaya a usar.");
+};
+
+render();
+quizStart();
+</script>
+</body>
+</html>

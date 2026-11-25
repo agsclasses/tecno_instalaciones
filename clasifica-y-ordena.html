@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clasifica y ordena · Instalaciones en viviendas</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --panel:#ffffff; --ink:#1f2328; --muted:#5f6670;
+    --line:#d9d3c7; --accent:#e8701a; --accent-dark:#b9540d;
+    --ok:#1f8a4c; --ok-bg:#e3f4ea; --bad:#c0392b; --bad-bg:#fbe7e4;
+    --info-bg:#fff4e6; --dark:#2b2f36; --radius:14px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45}
+  header{background:var(--dark);color:#fff;padding:18px 20px}
+  header .wrap{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  header h1{font-size:1.35rem;margin:0}
+  header a{color:#ffd2ad;text-decoration:none;font-size:.95rem}
+  header .tag{background:var(--accent);color:#fff;border-radius:999px;padding:2px 10px;font-size:.8rem;font-weight:600}
+  main{max-width:1100px;margin:0 auto;padding:18px 16px 40px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{border:1px solid var(--line);border-bottom:none;background:#ebe6dc;padding:10px 14px;border-radius:10px 10px 0 0;cursor:pointer;font:inherit;font-weight:600;color:var(--muted)}
+  .tab[aria-selected="true"]{background:var(--panel);color:var(--ink)}
+  .tabpanel{border-top-left-radius:0}
+  .hidden{display:none !important}
+  .btn{font:inherit;font-weight:600;border:none;border-radius:10px;padding:10px 16px;cursor:pointer;background:var(--accent);color:#fff}
+  .btn:hover{background:var(--accent-dark)}
+  .btn.sec{background:#e7e2d8;color:var(--ink)} .btn.sec:hover{background:#dcd5c8}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .small{font-size:.85rem;color:var(--muted)}
+  .msg{border-radius:10px;padding:12px 14px;margin-top:12px}
+  .msg.ok{background:var(--ok-bg);border-left:5px solid var(--ok)}
+  .msg.bad{background:var(--bad-bg);border-left:5px solid var(--bad)}
+  .msg.info{background:var(--info-bg);border-left:5px solid var(--accent)}
+
+  /* Clasificar */
+  .pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:12px;border:2px dashed var(--line);border-radius:12px;background:#faf8f3;margin:12px 0}
+  .item{font:inherit;font-size:.92rem;background:#fff;border:1px solid #cfc8ba;border-radius:10px;padding:8px 12px;cursor:grab;box-shadow:0 1px 0 rgba(0,0,0,.05);user-select:none;color:var(--ink)}
+  .item:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .item.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+  .item.done{background:var(--ok-bg);border-color:#9fd3b3;cursor:default;font-size:.85rem;padding:5px 9px}
+  .item.shake{animation:shake .45s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+  .bins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:820px){.bins{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:480px){.bin{min-height:90px;padding:8px}.bin h3{font-size:.88rem}}
+  .bin{border:2px solid var(--line);border-radius:12px;padding:10px;min-height:120px;background:#fff;cursor:pointer;transition:border-color .2s,background .2s;text-align:left;font:inherit;color:inherit;display:block;width:100%}
+  .bin:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .bin.over{border-color:var(--accent);background:#fff8f1}
+  .bin.ready{border-style:dashed;border-color:var(--accent)}
+  .bin h3{margin:0 0 8px;font-size:1rem}
+  .bin .content{display:flex;flex-wrap:wrap;gap:6px}
+  .stats{display:flex;gap:16px;font-weight:600}
+
+  /* Ordenar */
+  .seqsel{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .seqbtn{font:inherit;border:1px solid var(--line);background:#f7f5f0;border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600}
+  .seqbtn[aria-pressed="true"]{background:var(--dark);color:#fff;border-color:var(--dark)}
+  ol.seq{list-style:none;padding:0;margin:12px 0;counter-reset:paso}
+  ol.seq li{counter-increment:paso;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #cfc8ba;border-radius:10px;padding:8px 10px;margin-bottom:6px;transition:background .3s,border-color .3s}
+  ol.seq li::before{content:counter(paso);min-width:28px;height:28px;border-radius:50%;background:var(--dark);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+  ol.seq li .txt{flex:1}
+  ol.seq li.good{background:var(--ok-bg);border-color:#9fd3b3}
+  ol.seq li.wrong{background:var(--bad-bg);border-color:#e5a49b}
+  .arrow{font:inherit;width:36px;height:32px;border-radius:8px;border:1px solid var(--line);background:#f2efe8;cursor:pointer;font-size:1rem}
+  .arrow:disabled{opacity:.35;cursor:not-allowed}
+  footer{max-width:1100px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="tag">4º ESO · Tecnología</span>
+    <h1>Clasifica y ordena: instalaciones de la vivienda</h1>
+    <a href="index.html">← Volver a las actividades</a>
+  </div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="clas">1. ¿A qué instalación pertenece?</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="ord">2. Ordena el recorrido</button>
+  </div>
+
+  <!-- CLASIFICAR -->
+  <section class="card tabpanel" id="tab-clas">
+    <p>Lleva cada elemento a la instalación a la que pertenece. Puedes <strong>arrastrarlo</strong> o <strong>tocarlo y después tocar la caja</strong> (funciona en tablet y móvil).</p>
+    <div class="row" style="justify-content:space-between">
+      <div class="stats"><span id="cDone"></span><span id="cErr"></span></div>
+      <button class="btn sec" id="cReset">Empezar de nuevo</button>
+    </div>
+    <div class="pool" id="pool" aria-label="Elementos por clasificar"></div>
+    <div class="bins" id="bins"></div>
+    <div id="cMsg"></div>
+  </section>
+
+  <!-- ORDENAR -->
+  <section class="card tabpanel hidden" id="tab-ord">
+    <p>Ordena los pasos del recorrido de principio a fin con las flechas ↑ ↓ y pulsa «Comprobar».</p>
+    <div class="seqsel" id="seqsel"></div>
+    <p id="seqIntro" class="small"></p>
+    <ol class="seq" id="seq"></ol>
+    <div class="row">
+      <button class="btn" id="oCheck">Comprobar</button>
+      <button class="btn sec" id="oShuffle">Desordenar de nuevo</button>
+      <button class="btn sec" id="oSolution">Ver la solución</button>
+    </div>
+    <div id="oMsg"></div>
+  </section>
+</main>
+
+<footer>Actividad interactiva para el tema «Instalaciones en viviendas».</footer>
+
+<script>
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function setMsg(id, cls, html){ document.getElementById(id).innerHTML = html ? `<div class="msg ${cls}">${html}</div>` : ""; }
+
+/* Pestañas */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", x === t));
+  ["clas","ord"].forEach(k => document.getElementById("tab-"+k).classList.toggle("hidden", k !== t.dataset.tab));
+}));
+
+/* ================= 1. CLASIFICAR ================= */
+const BINS = [
+  {id:"ele", name:"⚡ Electricidad"},
+  {id:"agu", name:"🚰 Agua"},
+  {id:"des", name:"🚽 Desagüe"},
+  {id:"gas", name:"🔥 Gas"},
+  {id:"cli", name:"🌡️ Calefacción y climatización"},
+  {id:"dom", name:"🤖 Domótica"},
+];
+const ITEMS = [
+  {t:"Interruptor diferencial", b:"ele", ok:"Protege a las personas de las fugas de corriente.", hint:"Está en un cuadro con palancas y tiene un botón de prueba."},
+  {t:"Conmutador", b:"ele", ok:"Permite encender una lámpara desde dos lugares.", hint:"Se parece a un interruptor y está en la pared de un pasillo."},
+  {t:"Regleta de conexión", b:"ele", ok:"Sirve para empalmar cables eléctricos atornillándolos.", hint:"Se aprieta con un destornillador para unir… ¿qué?"},
+  {t:"Cable verde-amarillo", b:"ele", ok:"Es el conductor de protección (toma de tierra).", hint:"Piensa en el código de colores de los conductores."},
+  {t:"Llave de paso general", b:"agu", ok:"Corta el agua de toda la vivienda.", hint:"Si hay una fuga en el baño, es lo primero que cierras."},
+  {t:"Calentador", b:"agu", ok:"Calienta el agua sanitaria que llega a los grifos.", hint:"Recibe agua fría y la envía caliente a cocina y baño."},
+  {t:"Manguito flexible", b:"agu", ok:"Une tuberías y aparatos sanitarios porque se puede doblar.", hint:"Es un accesorio que une un grifo con su tubería."},
+  {t:"Sifón", b:"des", ok:"Retiene agua en forma de U para que no suban los olores.", hint:"Está debajo del lavabo y tiene forma de U."},
+  {t:"Bajante", b:"des", ok:"Tubería vertical que lleva las aguas residuales hacia abajo.", hint:"Tubería vertical de gran diámetro que sale también por el tejado."},
+  {t:"Arqueta registrable", b:"des", ok:"Caja con tapa donde se juntan tuberías antes del alcantarillado.", hint:"Está justo antes de conectar con el alcantarillado."},
+  {t:"Bombona de butano", b:"gas", ok:"Almacena el gas para viviendas sin gas canalizado.", hint:"La traen en camión y se cambia cuando se acaba."},
+  {t:"Regulador de presión", b:"gas", ok:"Mantiene estable la presión del gas de la bombona.", hint:"Va enganchado a la bombona."},
+  {t:"Rejilla de ventilación", b:"gas", ok:"Ventila los espacios donde se quema gas.", hint:"Es obligatoria donde hay llama: ¿qué combustible se quema?"},
+  {t:"Radiador", b:"cli", ok:"Cede al aire de la habitación el calor del agua caliente.", hint:"Por dentro circula agua caliente que viene de la caldera."},
+  {t:"Termostato", b:"cli", ok:"Enciende y apaga la caldera según la temperatura.", hint:"Tiene una rueda para elegir la temperatura de la casa."},
+  {t:"Evaporador (unidad interior)", b:"cli", ok:"En él se evapora el refrigerante y enfría la habitación.", hint:"Forma parte de un equipo split."},
+  {t:"Caldera de condensación", b:"cli", ok:"Calienta el agua de la calefacción aprovechando el calor del vapor.", hint:"Calienta el agua que circula por los radiadores."},
+  {t:"Sensor de movimiento", b:"dom", ok:"Informa al controlador de si hay alguien en la habitación.", hint:"Envía información a un pequeño ordenador que decide."},
+  {t:"Controlador", b:"dom", ok:"Pequeño ordenador que toma decisiones según su programa.", hint:"Es el «cerebro» de un sistema automático de la casa."},
+  {t:"Persiana motorizada", b:"dom", ok:"Actuador que sube o baja la persiana a distancia.", hint:"Se mueve con un mando a distancia gracias a un motor."},
+];
+
+let selected = null, cErrors = 0, cPlaced = 0;
+const pool = document.getElementById("pool"), binsEl = document.getElementById("bins");
+
+BINS.forEach(b => {
+  const el = document.createElement("div");
+  el.className = "bin"; el.dataset.bin = b.id; el.tabIndex = 0; el.setAttribute("role","button");
+  el.innerHTML = `<h3>${b.name}</h3><div class="content"></div>`;
+  el.addEventListener("click", () => { if (selected) place(selected, b.id); });
+  el.addEventListener("keydown", e => { if ((e.key==="Enter"||e.key===" ") && selected){ e.preventDefault(); place(selected, b.id); }});
+  el.addEventListener("dragover", e => { e.preventDefault(); el.classList.add("over"); });
+  el.addEventListener("dragleave", () => el.classList.remove("over"));
+  el.addEventListener("drop", e => {
+    e.preventDefault(); el.classList.remove("over");
+    const idx = e.dataTransfer.getData("text/plain");
+    const it = pool.querySelector(`[data-idx="${idx}"]`);
+    if (it) place(it, b.id);
+  });
+  binsEl.appendChild(el);
+});
+
+function select(el){
+  if (selected) selected.classList.remove("sel");
+  selected = (selected === el) ? null : el;
+  if (selected) selected.classList.add("sel");
+  document.querySelectorAll(".bin").forEach(b => b.classList.toggle("ready", !!selected));
+}
+
+function place(el, binId){
+  const it = ITEMS[+el.dataset.idx];
+  if (it.b === binId){
+    el.classList.remove("sel"); el.classList.add("done");
+    el.draggable = false; el.disabled = true;
+    document.querySelector(`.bin[data-bin="${binId}"] .content`).appendChild(el);
+    cPlaced++;
+    setMsg("cMsg","ok", `✅ <strong>${it.t}</strong>: ${it.ok}`);
+  } else {
+    cErrors++;
+    el.classList.remove("shake"); void el.offsetWidth; el.classList.add("shake");
+    const bName = BINS.find(b => b.id === binId).name.replace(/^\S+\s/,"");
+    setMsg("cMsg","bad", `❌ <strong>${it.t}</strong> no va en «${bName}». Pista: ${it.hint}`);
+  }
+  selected = null;
+  document.querySelectorAll(".item.sel").forEach(x => x.classList.remove("sel"));
+  document.querySelectorAll(".bin").forEach(b => b.classList.remove("ready"));
+  updateStats();
+  if (cPlaced === ITEMS.length){
+    setMsg("cMsg", cErrors <= 3 ? "ok" : "info",
+      `🎉 ¡Has clasificado los ${ITEMS.length} elementos con <strong>${cErrors}</strong> ${cErrors===1?"error":"errores"}!` +
+      (cErrors > 3 ? " Prueba otra vez a ver si consigues 3 errores o menos." : ""));
+  }
+}
+function updateStats(){
+  document.getElementById("cDone").textContent = `Colocados: ${cPlaced}/${ITEMS.length}`;
+  document.getElementById("cErr").textContent = `Errores: ${cErrors}`;
+}
+function classifyReset(){
+  pool.innerHTML = ""; document.querySelectorAll(".bin .content").forEach(c => c.innerHTML = "");
+  cErrors = 0; cPlaced = 0; selected = null;
+  shuffle(ITEMS.map((_,i)=>i)).forEach(i => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "item"; b.textContent = ITEMS[i].t;
+    b.dataset.idx = i; b.draggable = true;
+    b.addEventListener("click", e => { e.stopPropagation(); if (!b.classList.contains("done")) select(b); });
+    b.addEventListener("dragstart", e => { e.dataTransfer.setData("text/plain", i); });
+    pool.appendChild(b);
+  });
+  updateStats();
+  setMsg("cMsg","info","Toca un elemento para seleccionarlo y luego toca su instalación.");
+}
+document.getElementById("cReset").onclick = classifyReset;
+classifyReset();
+
+/* ================= 2. ORDENAR ================= */
+const SEQS = [
+  {id:"ele", name:"⚡ Electricidad", intro:"Desde la red de la compañía eléctrica hasta un enchufe de la cocina.",
+   steps:["Red de distribución de la compañía","Acometida","Caja general de protección (CGP)","Contador de electricidad","Cuadro de mando y protección","Circuito: tubo corrugado con los cables","Caja de conexión (empalmes)","Enchufe de la cocina"],
+   tip:"Recuerda: la CGP es el punto de unión entre la red pública y el edificio; el contador está en el armario de la entrada; el cuadro, ya dentro de la vivienda."},
+  {id:"agu", name:"🚰 Agua caliente", intro:"Desde la tubería de la calle hasta el grifo de agua caliente del baño.",
+   steps:["Red de distribución bajo la calle","Acometida con su llave","Contador de agua","Llave de paso general de la vivienda","Calentador","Grifo de agua caliente"],
+   tip:"Pista: la llave de acometida la manejan los técnicos de la compañía; la llave general está ya dentro de tu vivienda."},
+  {id:"des", name:"🚽 Desagüe", intro:"Desde el lavabo hasta la red pública de alcantarillado.",
+   steps:["Lavabo","Sifón","Tubería de desagüe del aparato","Bajante","Arqueta registrable","Alcantarillado público"],
+   tip:"Pista: el sifón está pegado al aparato; la arqueta, justo antes de salir de la propiedad."},
+  {id:"gas", name:"🔥 Gas canalizado", intro:"Desde la red de gas de la calle hasta los fogones de la cocina.",
+   steps:["Red de distribución bajo la acera","Acometida con su llave","Contador de gas (en un armario ventilado)","Llave general de la vivienda","Tubería de cobre vista","Llave de paso de la cocina","Fogones"],
+   tip:"Pista: delante de cada aparato hay una llave individual; la general corta toda la vivienda."},
+];
+let cur = SEQS[0], order = [];
+const seqEl = document.getElementById("seq"), seqSel = document.getElementById("seqsel");
+
+SEQS.forEach(s => {
+  const b = document.createElement("button");
+  b.className = "seqbtn"; b.type = "button"; b.textContent = s.name;
+  b.setAttribute("aria-pressed", s === cur);
+  b.onclick = () => { cur = s; document.querySelectorAll(".seqbtn").forEach(x => x.setAttribute("aria-pressed", x === b)); newOrder(); };
+  seqSel.appendChild(b);
+});
+
+function newOrder(){
+  do { order = shuffle(cur.steps.map((_,i)=>i)); } while (order.every((v,i)=>v===i));
+  document.getElementById("seqIntro").textContent = cur.intro;
+  setMsg("oMsg","",""); renderSeq();
+}
+function renderSeq(marks){
+  seqEl.innerHTML = "";
+  order.forEach((stepIdx, pos) => {
+    const li = document.createElement("li");
+    if (marks) li.classList.add(stepIdx === pos ? "good" : "wrong");
+    li.innerHTML = `<span class="txt">${cur.steps[stepIdx]}</span>`;
+    const up = document.createElement("button"); up.className = "arrow"; up.type="button"; up.textContent = "↑"; up.disabled = pos === 0;
+    up.setAttribute("aria-label", "Subir " + cur.steps[stepIdx]);
+    const dn = document.createElement("button"); dn.className = "arrow"; dn.type="button"; dn.textContent = "↓"; dn.disabled = pos === order.length - 1;
+    dn.setAttribute("aria-label", "Bajar " + cur.steps[stepIdx]);
+    up.onclick = () => move(pos, -1); dn.onclick = () => move(pos, 1);
+    li.append(up, dn);
+    seqEl.appendChild(li);
+  });
+}
+function move(pos, d){
+  const np = pos + d; [order[pos], order[np]] = [order[np], order[pos]];
+  setMsg("oMsg","",""); renderSeq();
+  const btns = seqEl.children[np].querySelectorAll(".arrow");
+  (d < 0 ? btns[0] : btns[1]).focus();
+}
+document.getElementById("oCheck").onclick = () => {
+  const good = order.filter((v,i)=>v===i).length;
+  renderSeq(true);
+  if (good === order.length) setMsg("oMsg","ok","✅ ¡Recorrido perfecto! Prueba ahora con otra instalación.");
+  else setMsg("oMsg","bad", `Tienes <strong>${good} de ${order.length}</strong> pasos en su sitio (en verde). ${cur.tip}`);
+};
+document.getElementById("oShuffle").onclick = newOrder;
+document.getElementById("oSolution").onclick = () => {
+  order = cur.steps.map((_,i)=>i); renderSeq(true);
+  setMsg("oMsg","info","Esta es la solución. Pulsa «Desordenar de nuevo» para intentarlo sin mirar.");
+};
+newOrder();
+</script>
+</body>
+</html>
